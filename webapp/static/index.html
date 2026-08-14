@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Кинотеатр в Telegram</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Telegram WebApp JS SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Kinobox Player Engine -->
+    <script src="https://kinobox.tv/kinobox.min.js"></script>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app" class="app-wrapper">
+        <!-- Top Navigation Bar -->
+        <header class="app-header">
+            <div class="header-brand">
+                <div class="brand-logo">
+                    <span class="logo-icon">🍿</span>
+                    <span class="logo-text">Cine<span class="highlight">Telegram</span></span>
+                </div>
+                <div id="userBadge" class="user-badge vip">
+                    <span class="badge-dot"></span>
+                    <span id="userStatusText">VIP Доступ</span>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-container">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Поиск фильмов, сериалов, аниме..." autocomplete="off">
+                <button id="clearSearchBtn" class="clear-search-btn" style="display: none;">&times;</button>
+            </div>
+        </header>
+
+        <!-- Category Filters Carousel -->
+        <nav class="categories-bar" id="categoryTabs">
+            <button class="cat-pill active" data-category="all">🔥 Все</button>
+            <button class="cat-pill" data-category="movie">🎬 Фильмы</button>
+            <button class="cat-pill" data-category="series">📺 Сериалы</button>
+            <button class="cat-pill" data-category="cartoon">🦁 Мультфильмы</button>
+            <button class="cat-pill" data-category="anime">⚡ Аниме</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Featured Hero Banner (hidden during search) -->
+            <section id="heroSection" class="hero-banner">
+                <div class="hero-backdrop" id="heroBackdrop"></div>
+                <div class="hero-overlay"></div>
+                <div class="hero-content">
+                    <span class="hero-tag">🔥 Премьера недели</span>
+                    <h1 id="heroTitle" class="hero-title">Дюна: Часть вторая</h1>
+                    <div class="hero-meta">
+                        <span class="meta-rating" id="heroRating">⭐ 8.5</span>
+                        <span class="meta-year" id="heroYear">2024</span>
+                        <span class="meta-genres" id="heroGenres">Фантастика • Драма</span>
+                    </div>
+                    <p id="heroDescription" class="hero-desc">Герцог Пол Атрейдес объединяется с народом фременов на опасной пустынной планете Арракис...</p>
+                    <div class="hero-actions">
+                        <button id="heroWatchBtn" class="btn-primary">
+                            <span class="btn-icon">▶</span> Смотреть онлайн
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Movies Grid Section -->
+            <section class="catalog-section">
+                <div class="section-header">
+                    <h2 id="sectionTitle" class="section-title">Популярное сейчас</h2>
+                    <span id="resultsCount" class="results-count"></span>
+                </div>
+
+                <!-- Cards Grid -->
+                <div id="moviesGrid" class="movies-grid">
+                    <!-- Movie Cards dynamically inserted here -->
+                </div>
+
+                <!-- Empty/Loading States -->
+                <div id="loadingState" class="state-container" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Загрузка каталога...</p>
+                </div>
+                <div id="emptyState" class="state-container" style="display: none;">
+                    <span class="empty-icon">🔍</span>
+                    <p>По вашему запросу ничего не найдено</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Movie Details & Player Modal -->
+    <div id="playerModal" class="modal-overlay">
+        <div class="modal-sheet">
+            <button id="closeModalBtn" class="modal-close-btn">&times;</button>
+            
+            <div class="modal-body">
+                <!-- Video Player Container -->
+                <div class="player-wrapper">
+                    <div id="kinoboxContainer" class="kinobox_player"></div>
+                </div>
+
+                <!-- Info Block -->
+                <div class="modal-info">
+                    <div class="modal-header-row">
+                        <h2 id="modalMovieTitle" class="modal-title">Название фильма</h2>
+                        <span id="modalMovieRating" class="rating-badge">⭐ 8.5</span>
+                    </div>
+                    <div class="modal-meta-row">
+                        <span id="modalMovieYear" class="meta-pill">2024</span>
+                        <span id="modalMovieDuration" class="meta-pill">120 мин.</span>
+                        <span id="modalMovieGenres" class="meta-genres-text">Боевик, Фантастика</span>
+                    </div>
+                    <p id="modalMovieDesc" class="modal-description">Описание фильма появится здесь.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paywall Warning Modal (If user opened WebApp without subscription) -->
+    <div id="paywallModal" class="paywall-overlay" style="display: none;">
+        <div class="paywall-card">
+            <div class="paywall-icon">🔒</div>
+            <h2>Требуется подписка</h2>
+            <p>Доступ к онлайн-кинотеатру открыт только для пользователей с активной подпиской.</p>
+            <div class="paywall-features">
+                <div class="feature-item">✓ Более 100 000+ фильмов и сериалов</div>
+                <div class="feature-item">✓ Без рекламы и ограничений скорости</div>
+                <div class="feature-item">✓ Русские дубляжи и Full HD 1080p</div>
+            </div>
+            <button id="paywallBtn" class="btn-primary full-width">Оформить подписку в боте</button>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
