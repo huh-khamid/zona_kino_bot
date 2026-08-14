@@ -8,17 +8,20 @@ logger = logging.getLogger(__name__)
 
 class Database:
     def __init__(self, db_path: str = "data/cinema_bot.db", database_url: str = ""):
-        self.db_path = db_path
         self.database_url = database_url or os.getenv("DATABASE_URL", "")
         self.is_postgres = bool(self.database_url and ("postgres://" in self.database_url or "postgresql://" in self.database_url))
         self.pg_pool = None
+        
+        # Ensure SQLite path is absolute and directory exists
+        self.db_path = os.path.abspath(db_path)
+        dir_name = os.path.dirname(self.db_path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
         
         if self.is_postgres:
             # Fix postgres:// URL format for asyncpg if needed
             if self.database_url.startswith("postgres://"):
                 self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
-        else:
-            os.makedirs(os.path.dirname(self.db_path) or ".", exist_ok=True)
 
     async def init_db(self):
         if self.is_postgres:
@@ -51,11 +54,13 @@ class Database:
             except Exception as e:
                 logger.error(f"PostgreSQL connection failed ({e}). Falling back to local SQLite database.")
                 self.is_postgres = False
-                os.makedirs(os.path.dirname(self.db_path) or ".", exist_ok=True)
 
         # SQLite fallback
-        import aiosqlite
-        async with aiosqlite.connect(self.db_path) as db:
+        dir_name = os.path.dirname(self.db_path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+            
+        async with self.get_sqlite_conn() as db:
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     user_id INTEGER PRIMARY KEY,
@@ -84,6 +89,9 @@ class Database:
     @asynccontextmanager
     async def get_sqlite_conn(self):
         import aiosqlite
+        dir_name = os.path.dirname(self.db_path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
         async with aiosqlite.connect(self.db_path) as conn:
             conn.row_factory = aiosqlite.Row
             yield conn
