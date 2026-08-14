@@ -209,7 +209,7 @@ async def cmd_broadcast(message: Message, bot: Bot):
         await message.answer("Укажите текст рассылки: <code>/broadcast Ваш текст здесь</code>", parse_mode="HTML")
         return
         
-    async with await db.get_connection() as conn:
+    async with db.get_connection() as conn:
         async with conn.execute("SELECT user_id, status, subscription_until FROM users") as cursor:
             users = await cursor.fetchall()
             

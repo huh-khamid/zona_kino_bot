@@ -1,20 +1,22 @@
 import os
 import aiosqlite
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List
 
 class Database:
     def __init__(self, db_path: str = "data/cinema_bot.db"):
         self.db_path = db_path
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        os.makedirs(os.path.dirname(self.db_path) or ".", exist_ok=True)
 
-    async def get_connection(self) -> aiosqlite.Connection:
-        conn = await aiosqlite.connect(self.db_path)
-        conn.row_factory = aiosqlite.Row
-        return conn
+    @asynccontextmanager
+    async def get_connection(self):
+        async with aiosqlite.connect(self.db_path) as conn:
+            conn.row_factory = aiosqlite.Row
+            yield conn
 
     async def init_db(self):
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     user_id INTEGER PRIMARY KEY,
@@ -40,11 +42,10 @@ class Database:
             await db.commit()
 
     async def get_or_create_user(self, user_id: int, username: Optional[str], full_name: str) -> Dict[str, Any]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             async with db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)) as cursor:
                 user = await cursor.fetchone()
                 if user:
-                    # Update username/full_name if changed
                     await db.execute(
                         "UPDATE users SET username = ?, full_name = ? WHERE user_id = ?",
                         (username, full_name, user_id)
@@ -68,7 +69,7 @@ class Database:
             }
 
     async def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             async with db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)) as cursor:
                 user = await cursor.fetchone()
                 return dict(user) if user else None
@@ -88,7 +89,6 @@ class Database:
             else:
                 until_dt = sub_until
             
-            # Make timezone-aware comparison
             if until_dt.tzinfo is None:
                 until_dt = until_dt.replace(tzinfo=timezone.utc)
             
@@ -98,7 +98,7 @@ class Database:
 
     async def create_payment_request(self, user_id: int, username: Optional[str], full_name: str, amount: int, receipt_file_id: str) -> int:
         now = datetime.now(timezone.utc).isoformat()
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute(
                 """INSERT INTO payment_requests (user_id, username, full_name, amount, receipt_file_id, status, created_at)
                    VALUES (?, ?, ?, ?, ?, 'pending', ?)""",
@@ -108,13 +108,13 @@ class Database:
             return cursor.lastrowid
 
     async def get_payment_request(self, req_id: int) -> Optional[Dict[str, Any]]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             async with db.execute("SELECT * FROM payment_requests WHERE id = ?", (req_id,)) as cursor:
                 req = await cursor.fetchone()
                 return dict(req) if req else None
 
     async def approve_payment_request(self, req_id: int, days: int = 30) -> Optional[Dict[str, Any]]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             async with db.execute("SELECT * FROM payment_requests WHERE id = ?", (req_id,)) as cursor:
                 req = await cursor.fetchone()
                 if not req or req["status"] != "pending":
@@ -122,7 +122,6 @@ class Database:
 
             user_id = req["user_id"]
             
-            # Calculate new expiration date
             async with db.execute("SELECT subscription_until FROM users WHERE user_id = ?", (user_id,)) as cursor:
                 user_row = await cursor.fetchone()
             
@@ -158,7 +157,7 @@ class Database:
             }
 
     async def reject_payment_request(self, req_id: int) -> Optional[int]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             async with db.execute("SELECT * FROM payment_requests WHERE id = ?", (req_id,)) as cursor:
                 req = await cursor.fetchone()
                 if not req or req["status"] != "pending":
@@ -169,7 +168,7 @@ class Database:
             return req["user_id"]
 
     async def get_stats(self) -> Dict[str, int]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             async with db.execute("SELECT COUNT(*) as cnt FROM users") as c:
                 total_users = (await c.fetchone())["cnt"]
             
@@ -196,7 +195,7 @@ class Database:
         sub_dt = now_dt + timedelta(days=days)
         sub_str = sub_dt.isoformat()
         
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             await db.execute(
                 """INSERT INTO users (user_id, status, subscription_until, created_at)
                    VALUES (?, 'subscribed', ?, ?)
