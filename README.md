@@ -145,21 +145,39 @@ python3 run.py
    - **Branch**: `main`
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `python run.py`
-   - **Instance Type**: `Free`
-5. В разделе **Environment Variables** добавьте:
-   - `BOT_TOKEN` — ваш токен от @BotFather.
-   - `ADMIN_IDS` — ваш Telegram ID (число).
-   - `CARD_NUMBER` — номер вашей карты для переводов.
-   - `CARD_BANK` — название банка (например, Т-Банк).
-   - `CARD_HOLDER` — имя получателя (например, Иван И.).
-   - `SUBSCRIPTION_PRICE` — 299.
-   - `KEEP_ALIVE` — `true`.
-6. Нажмите **Create Web Service**.
+### 💾 Важно: Как сохранить подписки навсегда (Подключение бесплатной PostgreSQL)
+На бесплатном тарифе Render.com локальный диск очищается при каждом новом деплое или перезапуске контейнера. Чтобы **подписки и пользователи никогда не слетали**, подключите бесплатную облачную базу данных PostgreSQL (займет 1 минуту):
 
-> 💡 **Render автоматически назначит HTTPS-домен** вида `https://zona-kino-bot-xxxx.onrender.com`. Бот автоматически распознает этот URL и откроет Web App без каких-либо дополнительных настроек!
+**Вариант А (Бесплатный Neon.tech или Supabase — рекомендуется):**
+1. Зайдите на [neon.tech](https://neon.tech/) или [supabase.com](https://supabase.com/) и создайте бесплатный проект.
+2. Скопируйте строку подключения `Connection String` (вида `postgresql://user:password@ep-host.neon.tech/neondb?sslmode=require`).
+3. В Render.com в **Environment Variables** добавьте переменную:
+   - `DATABASE_URL` = *ваша ссылка на PostgreSQL*.
+4. Бот автоматически создаст все таблицы и данные будут сохранены навсегда!
+
+**Вариант Б (Render PostgreSQL):**
+1. В Render Dashboard нажмите **New +** ➔ **PostgreSQL**.
+2. Скопируйте **Internal Database URL**.
+3. Вставьте его в переменную `DATABASE_URL` вашего веб-сервиса.
+
+---
+
+### 📋 Переменные окружения на Render.com (Environment Variables):
+- `BOT_TOKEN` — ваш токен бота от @BotFather.
+- `ADMIN_IDS` — ваш Telegram ID (число).
+- `DATABASE_URL` — ссылка на облачную PostgreSQL (чтобы данные не сбрасывались).
+- `CURRENCY_SYMBOL` — `сум`
+- `SUBSCRIPTION_PRICE` — `25000` (25 000 сум)
+- `SUBSCRIPTION_DAYS` — `30`
+- `CARD_NUMBER` — номер вашей карты (например, Uzcard `8600 0000 0000 0000`).
+- `CARD_BANK` — `Uzcard / Humo`.
+- `CARD_HOLDER` — имя владельца карты.
+- `CINEMA_URL` — `https://msx.zona.ms/`
+- `KEEP_ALIVE` — `true`
+
+---
 
 ### 🛡️ Дополнительная 100% гарантия от засыпания (UptimeRobot):
-Если вы хотите 100% стабильность 24/7:
 1. Зарегистрируйтесь на бесплатном сервисе [UptimeRobot.com](https://uptimerobot.com/).
 2. Нажмите **Add New Monitor**:
    - **Monitor Type**: `HTTP(s)`

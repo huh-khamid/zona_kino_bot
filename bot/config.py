@@ -13,12 +13,13 @@ class Config:
         int(x.strip()) for x in _admin_ids_raw.split(",") if x.strip().isdigit()
     ]
     
-    # Payment details
-    CARD_NUMBER: str = os.getenv("CARD_NUMBER", "2202 2000 0000 0000")
-    CARD_BANK: str = os.getenv("CARD_BANK", "Т-Банк / Сбербанк")
-    CARD_HOLDER: str = os.getenv("CARD_HOLDER", "Иван Иванов")
-    SUBSCRIPTION_PRICE: int = int(os.getenv("SUBSCRIPTION_PRICE", "299")) # RUB
+    # Payment & Currency details (Uzbek Sums)
+    CURRENCY_SYMBOL: str = os.getenv("CURRENCY_SYMBOL", "сум")
+    SUBSCRIPTION_PRICE: int = int(os.getenv("SUBSCRIPTION_PRICE", "25000")) # 25,000 UZS
     SUBSCRIPTION_DAYS: int = int(os.getenv("SUBSCRIPTION_DAYS", "30")) # 30 days
+    CARD_NUMBER: str = os.getenv("CARD_NUMBER", "8600 0000 0000 0000")
+    CARD_BANK: str = os.getenv("CARD_BANK", "Uzcard / Humo")
+    CARD_HOLDER: str = os.getenv("CARD_HOLDER", "Имя Получателя")
     
     # WebApp URL (Auto-detected on Render.com or configured manually in .env)
     WEBAPP_URL: str = os.getenv("RENDER_EXTERNAL_URL", os.getenv("WEBAPP_URL", "http://127.0.0.1:8000"))
@@ -30,7 +31,8 @@ class Config:
     KEEP_ALIVE: bool = os.getenv("KEEP_ALIVE", "true").lower() in ("true", "1", "yes")
     PING_INTERVAL: int = int(os.getenv("PING_INTERVAL", "600")) # 10 minutes in seconds
     
-    # Database
+    # Database (PostgreSQL URL for Render/Supabase/Neon OR local SQLite fallback)
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     DATABASE_PATH: str = os.getenv("DATABASE_PATH", "data/cinema_bot.db")
     
     # Server configuration

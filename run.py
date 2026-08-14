@@ -33,7 +33,7 @@ async def run_fastapi():
 
 async def run_bot():
     """Runs Telegram Bot Polling."""
-    db = Database(config.DATABASE_PATH)
+    db = Database(config.DATABASE_PATH, config.DATABASE_URL)
     await db.init_db()
     
     if not config.BOT_TOKEN:

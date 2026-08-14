@@ -11,16 +11,22 @@ services:
         sync: false
       - key: ADMIN_IDS
         sync: false
-      - key: CARD_NUMBER
-        value: "2202 2000 0000 0000"
-      - key: CARD_BANK
-        value: "Т-Банк / Сбербанк"
-      - key: CARD_HOLDER
-        value: "Иван И."
+      - key: DATABASE_URL
+        sync: false
+      - key: CURRENCY_SYMBOL
+        value: "сум"
       - key: SUBSCRIPTION_PRICE
-        value: "299"
+        value: "25000"
       - key: SUBSCRIPTION_DAYS
         value: "30"
+      - key: CARD_NUMBER
+        value: "8600 0000 0000 0000"
+      - key: CARD_BANK
+        value: "Uzcard / Humo"
+      - key: CARD_HOLDER
+        value: "Имя Получателя"
+      - key: CINEMA_URL
+        value: "https://msx.zona.ms/"
       - key: KEEP_ALIVE
         value: "true"
       - key: PING_INTERVAL

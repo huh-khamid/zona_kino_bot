@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-db = Database(config.DATABASE_PATH)
+db = Database(config.DATABASE_PATH, config.DATABASE_URL)
 
 # Path to static folder
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")

@@ -7,7 +7,12 @@ from aiogram.types import (
 )
 from bot.config import config
 
-def get_main_menu(is_subscribed: bool = False, webapp_url: str = "") -> ReplyKeyboardMarkup:
+def format_price(amount: int) -> str:
+    """Formats amount like 25000 -> 25 000 сум."""
+    formatted_num = f"{amount:,}".replace(",", " ")
+    return f"{formatted_num} {config.CURRENCY_SYMBOL}"
+
+def get_main_menu(is_subscribed: bool = False, webapp_url: str = "", is_admin: bool = False) -> ReplyKeyboardMarkup:
     url = webapp_url or config.CINEMA_URL
     
     keyboard = []
@@ -32,6 +37,11 @@ def get_main_menu(is_subscribed: bool = False, webapp_url: str = "") -> ReplyKey
         keyboard.append([
             KeyboardButton(text="👤 Мой профиль"),
             KeyboardButton(text="ℹ️ О кинотеатре")
+        ])
+
+    if is_admin:
+        keyboard.append([
+            KeyboardButton(text="👑 Админ-панель")
         ])
     
     return ReplyKeyboardMarkup(
@@ -93,10 +103,15 @@ def get_admin_panel_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="📊 Обновить статистику", callback_data="admin_stats")
+                InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats"),
+                InlineKeyboardButton(text="➕ Выдать VIP", callback_data="admin_grant_start")
             ],
             [
-                InlineKeyboardButton(text="➕ Выдать доступ вручную", callback_data="admin_grant_manual")
+                InlineKeyboardButton(text="📢 Рассылка", callback_data="admin_broadcast_start"),
+                InlineKeyboardButton(text="💳 Реквизиты и цена", callback_data="admin_view_pricing")
+            ],
+            [
+                InlineKeyboardButton(text="❌ Закрыть панель", callback_data="admin_close_panel")
             ]
         ]
     )

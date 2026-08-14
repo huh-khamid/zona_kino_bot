@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 async def start_bot(bot_instance: Bot = None, dp_instance: Dispatcher = None):
-    db = Database(config.DATABASE_PATH)
+    db = Database(config.DATABASE_PATH, config.DATABASE_URL)
     await db.init_db()
     logger.info("Database initialized.")
 
