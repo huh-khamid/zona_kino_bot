@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: zona-kino-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_IDS
+        sync: false
+      - key: CARD_NUMBER
+        value: "2202 2000 0000 0000"
+      - key: CARD_BANK
+        value: "Т-Банк / Сбербанк"
+      - key: CARD_HOLDER
+        value: "Иван И."
+      - key: SUBSCRIPTION_PRICE
+        value: "299"
+      - key: SUBSCRIPTION_DAYS
+        value: "30"
+      - key: KEEP_ALIVE
+        value: "true"
+      - key: PING_INTERVAL
+        value: "600"

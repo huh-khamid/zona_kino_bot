@@ -129,6 +129,47 @@ python3 run.py
 
 ---
 
+## ☁️ Деплой на Render.com (Бесплатный хостинг 24/7)
+
+Бесплатный тариф Render.com («Free Web Service») обычно «засыпает» через 15 минут, если на сайт не поступают запросы, из-за чего бот перестает отвечать в Telegram.
+
+В проект **уже встроена система Anti-Sleep**, которая каждые 10 минут отправляет запрос на собственный `/health` эндпоинт, поддерживая сервис бодрствующим!
+
+### Пошаговая инструкция по деплою:
+1. Зайдите на [dashboard.render.com](https://dashboard.render.com/) и авторизуйтесь через GitHub.
+2. Нажмите **New +** ➔ **Web Service**.
+3. Выберите ваш репозиторий `zona_kino_bot`.
+4. Заполните параметры:
+   - **Name**: `zona-kino-bot`
+   - **Language**: `Python 3`
+   - **Branch**: `main`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `python run.py`
+   - **Instance Type**: `Free`
+5. В разделе **Environment Variables** добавьте:
+   - `BOT_TOKEN` — ваш токен от @BotFather.
+   - `ADMIN_IDS` — ваш Telegram ID (число).
+   - `CARD_NUMBER` — номер вашей карты для переводов.
+   - `CARD_BANK` — название банка (например, Т-Банк).
+   - `CARD_HOLDER` — имя получателя (например, Иван И.).
+   - `SUBSCRIPTION_PRICE` — 299.
+   - `KEEP_ALIVE` — `true`.
+6. Нажмите **Create Web Service**.
+
+> 💡 **Render автоматически назначит HTTPS-домен** вида `https://zona-kino-bot-xxxx.onrender.com`. Бот автоматически распознает этот URL и откроет Web App без каких-либо дополнительных настроек!
+
+### 🛡️ Дополнительная 100% гарантия от засыпания (UptimeRobot):
+Если вы хотите 100% стабильность 24/7:
+1. Зарегистрируйтесь на бесплатном сервисе [UptimeRobot.com](https://uptimerobot.com/).
+2. Нажмите **Add New Monitor**:
+   - **Monitor Type**: `HTTP(s)`
+   - **Friendly Name**: `Cinema Bot`
+   - **URL (or IP)**: `https://ваш-сервис.onrender.com/health`
+   - **Monitoring Interval**: `Every 5 minutes`
+3. Нажмите **Create Monitor**. Теперь робот будет опрашивать сервер каждые 5 минут, и Render никогда не уйдет в спящий режим!
+
+---
+
 ## 📱 Сценарий работы (User Flow)
 
 1. Пользователь заходит в бота и жмет `/start`.

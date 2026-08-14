@@ -20,8 +20,12 @@ class Config:
     SUBSCRIPTION_PRICE: int = int(os.getenv("SUBSCRIPTION_PRICE", "299")) # RUB
     SUBSCRIPTION_DAYS: int = int(os.getenv("SUBSCRIPTION_DAYS", "30")) # 30 days
     
-    # WebApp URL (URL where FastAPI server is hosted or tunneled via ngrok/Cloudflare)
-    WEBAPP_URL: str = os.getenv("WEBAPP_URL", "http://127.0.0.1:8000")
+    # WebApp URL (Auto-detected on Render.com or configured manually in .env)
+    WEBAPP_URL: str = os.getenv("RENDER_EXTERNAL_URL", os.getenv("WEBAPP_URL", "http://127.0.0.1:8000"))
+    
+    # Render Keep-Alive / Anti-Sleep settings
+    KEEP_ALIVE: bool = os.getenv("KEEP_ALIVE", "true").lower() in ("true", "1", "yes")
+    PING_INTERVAL: int = int(os.getenv("PING_INTERVAL", "600")) # 10 minutes in seconds
     
     # Database
     DATABASE_PATH: str = os.getenv("DATABASE_PATH", "data/cinema_bot.db")

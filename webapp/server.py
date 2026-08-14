@@ -180,6 +180,12 @@ CURATED_CATALOG: List[Dict[str, Any]] = [
     }
 ]
 
+@app.get("/health")
+@app.get("/ping")
+async def health_check():
+    """Health check endpoint for Render.com and UptimeRobot keep-alive."""
+    return {"status": "ok", "service": "TelegramCinemaWebApp", "time": "running"}
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     index_file = os.path.join(STATIC_DIR, "index.html")

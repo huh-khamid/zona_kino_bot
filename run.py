@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import aiohttp
 import uvicorn
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
@@ -61,15 +62,43 @@ async def run_bot():
     finally:
         await bot.session.close()
 
+async def run_self_ping():
+    """Background task to prevent Render.com free tier from sleeping."""
+    if not config.KEEP_ALIVE:
+        return
+        
+    await asyncio.sleep(20) # Wait for FastAPI to spin up
+    
+    url = config.WEBAPP_URL.rstrip('/')
+    if not url.startswith("http") or "localhost" in url or "127.0.0.1" in url:
+        logger.info("ℹ️ Anti-Sleep ping disabled for local environment (localhost).")
+        return
+        
+    ping_url = f"{url}/health"
+    logger.info(f"🔄 Render Anti-Sleep Keep-Alive active! Target: {ping_url} (every {config.PING_INTERVAL}s)")
+    
+    while True:
+        try:
+            await asyncio.sleep(config.PING_INTERVAL)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(ping_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 200:
+                        logger.info("💓 Anti-Sleep ping sent successfully.")
+                    else:
+                        logger.warning(f"⚠️ Anti-Sleep ping returned HTTP {resp.status}")
+        except Exception as e:
+            logger.debug(f"Anti-Sleep ping exception: {e}")
+
 async def main():
     logger.info("==========================================")
     logger.info("🎬 Starting Telegram Cinema Bot + WebApp")
     logger.info("==========================================")
     
-    # Run both services concurrently in the same asyncio loop
+    # Run FastAPI server, Telegram Bot and Anti-Sleep pinger concurrently
     await asyncio.gather(
         run_fastapi(),
-        run_bot()
+        run_bot(),
+        run_self_ping()
     )
 
 if __name__ == "__main__":
