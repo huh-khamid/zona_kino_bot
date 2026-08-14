@@ -6,7 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 from datetime import datetime, timezone
 
 from bot.config import config
-from bot.database import Database
+from bot.database import db
 from bot.keyboards import (
     get_main_menu,
     get_payment_keyboard,
@@ -16,7 +16,6 @@ from bot.keyboards import (
 )
 
 router = Router()
-db = Database(config.DATABASE_PATH, config.DATABASE_URL)
 
 class PaymentStates(StatesGroup):
     waiting_for_receipt = State()

@@ -6,14 +6,13 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import config
-from bot.database import Database
+from bot.database import db
 from bot.handlers import user_handlers, admin_handlers
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 async def start_bot(bot_instance: Bot = None, dp_instance: Dispatcher = None):
-    db = Database(config.DATABASE_PATH, config.DATABASE_URL)
     await db.init_db()
     logger.info("Database initialized.")
 

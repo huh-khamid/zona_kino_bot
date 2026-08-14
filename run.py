@@ -8,7 +8,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import config
-from bot.database import Database
+from bot.database import db
 from bot.handlers import user_handlers, admin_handlers
 from webapp.server import app as fastapi_app
 
@@ -33,7 +33,6 @@ async def run_fastapi():
 
 async def run_bot():
     """Runs Telegram Bot Polling."""
-    db = Database(config.DATABASE_PATH, config.DATABASE_URL)
     await db.init_db()
     
     if not config.BOT_TOKEN:

@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from bot.config import config
-from bot.database import Database
+from bot.database import db
 
 app = FastAPI(title="Telegram Cinema WebApp", version="1.0.0")
 
@@ -19,8 +19,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-db = Database(config.DATABASE_PATH, config.DATABASE_URL)
 
 # Path to static folder
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")

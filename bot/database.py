@@ -1,93 +1,113 @@
 import os
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List
 from contextlib import asynccontextmanager
+from bot.config import config
 
 logger = logging.getLogger(__name__)
 
 class Database:
     def __init__(self, db_path: str = "data/cinema_bot.db", database_url: str = ""):
+        self.db_path = os.path.abspath(db_path)
         self.database_url = database_url or os.getenv("DATABASE_URL", "")
         self.is_postgres = bool(self.database_url and ("postgres://" in self.database_url or "postgresql://" in self.database_url))
         self.pg_pool = None
-        
-        # Ensure SQLite path is absolute and directory exists
-        self.db_path = os.path.abspath(db_path)
-        dir_name = os.path.dirname(self.db_path)
-        if dir_name:
-            os.makedirs(dir_name, exist_ok=True)
-        
+        self._initialized = False
+        self._init_lock = None
+
         if self.is_postgres:
-            # Fix postgres:// URL format for asyncpg if needed
             if self.database_url.startswith("postgres://"):
                 self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
+        else:
+            dir_name = os.path.dirname(self.db_path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
+
+    def _get_lock(self) -> asyncio.Lock:
+        if self._init_lock is None:
+            self._init_lock = asyncio.Lock()
+        return self._init_lock
 
     async def init_db(self):
-        if self.is_postgres:
-            try:
-                import asyncpg
-                self.pg_pool = await asyncpg.create_pool(self.database_url)
-                logger.info("Connected to Cloud PostgreSQL database pool.")
-                async with self.pg_pool.acquire() as conn:
-                    await conn.execute("""
-                        CREATE TABLE IF NOT EXISTS users (
-                            user_id BIGINT PRIMARY KEY,
-                            username TEXT,
-                            full_name TEXT,
-                            status TEXT DEFAULT 'user',
-                            subscription_until TIMESTAMPTZ,
-                            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-                        );
-                        CREATE TABLE IF NOT EXISTS payment_requests (
-                            id SERIAL PRIMARY KEY,
-                            user_id BIGINT,
-                            username TEXT,
-                            full_name TEXT,
-                            amount BIGINT,
-                            receipt_file_id TEXT,
-                            status TEXT DEFAULT 'pending',
-                            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-                        );
-                    """)
+        async with self._get_lock():
+            if self._initialized:
                 return
-            except Exception as e:
-                logger.error(f"PostgreSQL connection failed ({e}). Falling back to local SQLite database.")
-                self.is_postgres = False
 
-        # SQLite fallback
-        dir_name = os.path.dirname(self.db_path)
-        if dir_name:
-            os.makedirs(dir_name, exist_ok=True)
+            if self.is_postgres:
+                try:
+                    import asyncpg
+                    self.pg_pool = await asyncpg.create_pool(self.database_url)
+                    logger.info("Connected to Cloud PostgreSQL database pool.")
+                    async with self.pg_pool.acquire() as conn:
+                        await conn.execute("""
+                            CREATE TABLE IF NOT EXISTS users (
+                                user_id BIGINT PRIMARY KEY,
+                                username TEXT,
+                                full_name TEXT,
+                                status TEXT DEFAULT 'user',
+                                subscription_until TIMESTAMPTZ,
+                                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                            );
+                            CREATE TABLE IF NOT EXISTS payment_requests (
+                                id SERIAL PRIMARY KEY,
+                                user_id BIGINT,
+                                username TEXT,
+                                full_name TEXT,
+                                amount BIGINT,
+                                receipt_file_id TEXT,
+                                status TEXT DEFAULT 'pending',
+                                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                            );
+                        """)
+                    self._initialized = True
+                    return
+                except Exception as e:
+                    logger.error(f"PostgreSQL connection failed ({e}). Falling back to local SQLite database.")
+                    self.is_postgres = False
+
+            # SQLite fallback
+            import aiosqlite
+            dir_name = os.path.dirname(self.db_path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
+
+            async with aiosqlite.connect(self.db_path) as conn:
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        user_id INTEGER PRIMARY KEY,
+                        username TEXT,
+                        full_name TEXT,
+                        status TEXT DEFAULT 'user',
+                        subscription_until TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS payment_requests (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER,
+                        username TEXT,
+                        full_name TEXT,
+                        amount INTEGER,
+                        receipt_file_id TEXT,
+                        status TEXT DEFAULT 'pending',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                await conn.commit()
             
-        async with self.get_sqlite_conn() as db:
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    user_id INTEGER PRIMARY KEY,
-                    username TEXT,
-                    full_name TEXT,
-                    status TEXT DEFAULT 'user',
-                    subscription_until TIMESTAMP,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS payment_requests (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER,
-                    username TEXT,
-                    full_name TEXT,
-                    amount INTEGER,
-                    receipt_file_id TEXT,
-                    status TEXT DEFAULT 'pending',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            await db.commit()
+            self._initialized = True
             logger.info("SQLite database initialized at: %s", self.db_path)
+
+    async def ensure_ready(self):
+        if not self._initialized:
+            await self.init_db()
 
     @asynccontextmanager
     async def get_sqlite_conn(self):
+        await self.ensure_ready()
         import aiosqlite
         dir_name = os.path.dirname(self.db_path)
         if dir_name:
@@ -97,7 +117,9 @@ class Database:
             yield conn
 
     async def get_or_create_user(self, user_id: int, username: Optional[str], full_name: str) -> Dict[str, Any]:
+        await self.ensure_ready()
         now_dt = datetime.now(timezone.utc)
+        
         if self.is_postgres and self.pg_pool:
             async with self.pg_pool.acquire() as conn:
                 row = await conn.fetchrow("SELECT * FROM users WHERE user_id = $1", user_id)
@@ -148,6 +170,7 @@ class Database:
             }
 
     async def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
+        await self.ensure_ready()
         if self.is_postgres and self.pg_pool:
             async with self.pg_pool.acquire() as conn:
                 row = await conn.fetchrow("SELECT * FROM users WHERE user_id = $1", user_id)
@@ -181,6 +204,7 @@ class Database:
             return False
 
     async def create_payment_request(self, user_id: int, username: Optional[str], full_name: str, amount: int, receipt_file_id: str) -> int:
+        await self.ensure_ready()
         now_dt = datetime.now(timezone.utc)
         if self.is_postgres and self.pg_pool:
             async with self.pg_pool.acquire() as conn:
@@ -201,6 +225,7 @@ class Database:
             return cursor.lastrowid
 
     async def get_payment_request(self, req_id: int) -> Optional[Dict[str, Any]]:
+        await self.ensure_ready()
         if self.is_postgres and self.pg_pool:
             async with self.pg_pool.acquire() as conn:
                 row = await conn.fetchrow("SELECT * FROM payment_requests WHERE id = $1", req_id)
@@ -212,6 +237,7 @@ class Database:
                 return dict(req) if req else None
 
     async def approve_payment_request(self, req_id: int, days: int = 30) -> Optional[Dict[str, Any]]:
+        await self.ensure_ready()
         req = await self.get_payment_request(req_id)
         if not req or req["status"] != "pending":
             return None
@@ -259,6 +285,7 @@ class Database:
         }
 
     async def reject_payment_request(self, req_id: int) -> Optional[int]:
+        await self.ensure_ready()
         req = await self.get_payment_request(req_id)
         if not req or req["status"] != "pending":
             return None
@@ -274,6 +301,7 @@ class Database:
         return req["user_id"]
 
     async def get_stats(self) -> Dict[str, Any]:
+        await self.ensure_ready()
         now_dt = datetime.now(timezone.utc)
         if self.is_postgres and self.pg_pool:
             async with self.pg_pool.acquire() as conn:
@@ -310,6 +338,7 @@ class Database:
             }
 
     async def grant_manual_subscription(self, user_id: int, days: int = 30) -> datetime:
+        await self.ensure_ready()
         now_dt = datetime.now(timezone.utc)
         sub_dt = now_dt + timedelta(days=days)
         
@@ -337,6 +366,7 @@ class Database:
         return sub_dt
 
     async def get_all_users(self) -> List[Dict[str, Any]]:
+        await self.ensure_ready()
         if self.is_postgres and self.pg_pool:
             async with self.pg_pool.acquire() as conn:
                 rows = await conn.fetch("SELECT user_id, username, full_name, status, subscription_until FROM users")
@@ -346,3 +376,6 @@ class Database:
             async with db.execute("SELECT user_id, username, full_name, status, subscription_until FROM users") as cursor:
                 rows = await cursor.fetchall()
                 return [dict(r) for r in rows]
+
+# Shared database singleton instance used across the entire application
+db = Database(config.DATABASE_PATH, config.DATABASE_URL)
