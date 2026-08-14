@@ -49,7 +49,7 @@ async def cmd_start(message: Message, state: FSMContext):
         
     await message.answer(
         welcome_text,
-        reply_markup=get_main_menu(is_sub, config.WEBAPP_URL),
+        reply_markup=get_main_menu(is_sub, config.CINEMA_URL),
         parse_mode="HTML"
     )
 
@@ -101,7 +101,7 @@ async def cancel_callback(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     await callback.message.answer(
         "Действие отменено.",
-        reply_markup=get_main_menu(is_sub, config.WEBAPP_URL)
+        reply_markup=get_main_menu(is_sub, config.CINEMA_URL)
     )
     await callback.answer()
 
@@ -111,7 +111,7 @@ async def cancel_text(message: Message, state: FSMContext):
     is_sub = await db.is_user_subscribed(message.from_user.id)
     await message.answer(
         "Действие отменено.",
-        reply_markup=get_main_menu(is_sub, config.WEBAPP_URL)
+        reply_markup=get_main_menu(is_sub, config.CINEMA_URL)
     )
 
 @router.message(PaymentStates.waiting_for_receipt, F.content_type.in_([ContentType.PHOTO, ContentType.DOCUMENT]))
@@ -146,7 +146,7 @@ async def process_receipt(message: Message, state: FSMContext, bot: Bot):
         "✅ <b>Ваш чек успешно принят в обработку!</b>\n\n"
         f"Заявка <b>#{req_id}</b> отправлена администратору на проверку.\n"
         "Обычно подтверждение занимает от 2 до 15 минут. Как только оплата будет зачислена, вам придет уведомление!",
-        reply_markup=get_main_menu(is_sub, config.WEBAPP_URL),
+        reply_markup=get_main_menu(is_sub, config.CINEMA_URL),
         parse_mode="HTML"
     )
     
@@ -224,7 +224,7 @@ async def show_profile(message: Message):
         
     await message.answer(
         profile_text,
-        reply_markup=get_main_menu(is_sub, config.WEBAPP_URL),
+        reply_markup=get_main_menu(is_sub, config.CINEMA_URL),
         parse_mode="HTML"
     )
 
@@ -245,6 +245,6 @@ async def show_info(message: Message):
     )
     await message.answer(
         info_text,
-        reply_markup=get_main_menu(is_sub, config.WEBAPP_URL),
+        reply_markup=get_main_menu(is_sub, config.CINEMA_URL),
         parse_mode="HTML"
     )

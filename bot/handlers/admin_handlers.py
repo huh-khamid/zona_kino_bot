@@ -87,7 +87,7 @@ async def approve_payment(callback: CallbackQuery, bot: Bot):
         await bot.send_message(
             chat_id=user_id,
             text=user_msg,
-            reply_markup=get_main_menu(is_subscribed=True, webapp_url=config.WEBAPP_URL),
+            reply_markup=get_main_menu(is_subscribed=True, webapp_url=config.CINEMA_URL),
             parse_mode="HTML"
         )
     except Exception as e:
@@ -137,7 +137,7 @@ async def reject_payment(callback: CallbackQuery, bot: Bot):
         await bot.send_message(
             chat_id=user_id,
             text=user_msg,
-            reply_markup=get_main_menu(is_sub, config.WEBAPP_URL),
+            reply_markup=get_main_menu(is_sub, config.CINEMA_URL),
             parse_mode="HTML"
         )
     except Exception as e:
@@ -193,7 +193,7 @@ async def cmd_give_access(message: Message, bot: Bot):
                 f"📅 Подписка активна до: <b>{until_formatted}</b>\n\n"
                 "Нажмите <b>«🎬 Открыть кинотеатр»</b>, чтобы начать просмотр."
             ),
-            reply_markup=get_main_menu(is_subscribed=True, webapp_url=config.WEBAPP_URL),
+            reply_markup=get_main_menu(is_subscribed=True, webapp_url=config.CINEMA_URL),
             parse_mode="HTML"
         )
     except Exception as e:
@@ -225,7 +225,7 @@ async def cmd_broadcast(message: Message, bot: Bot):
             await bot.send_message(
                 chat_id=uid,
                 text=text_to_send,
-                reply_markup=get_main_menu(is_sub, config.WEBAPP_URL),
+                reply_markup=get_main_menu(is_sub, config.CINEMA_URL),
                 parse_mode="HTML"
             )
             sent_count += 1

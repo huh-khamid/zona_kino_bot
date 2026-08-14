@@ -23,6 +23,9 @@ class Config:
     # WebApp URL (Auto-detected on Render.com or configured manually in .env)
     WEBAPP_URL: str = os.getenv("RENDER_EXTERNAL_URL", os.getenv("WEBAPP_URL", "http://127.0.0.1:8000"))
     
+    # Cinema destination WebApp URL (Direct link to msx.zona.ms)
+    CINEMA_URL: str = os.getenv("CINEMA_URL", "https://msx.zona.ms/")
+    
     # Render Keep-Alive / Anti-Sleep settings
     KEEP_ALIVE: bool = os.getenv("KEEP_ALIVE", "true").lower() in ("true", "1", "yes")
     PING_INTERVAL: int = int(os.getenv("PING_INTERVAL", "600")) # 10 minutes in seconds

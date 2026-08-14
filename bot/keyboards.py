@@ -8,7 +8,7 @@ from aiogram.types import (
 from bot.config import config
 
 def get_main_menu(is_subscribed: bool = False, webapp_url: str = "") -> ReplyKeyboardMarkup:
-    url = webapp_url or config.WEBAPP_URL
+    url = webapp_url or config.CINEMA_URL
     
     keyboard = []
     if is_subscribed:
